@@ -203,12 +203,12 @@ def _get_rw_functions_rs(reg_name, reg_base, size, nwords, busword, read_only, c
     if nwords > 1:
         r += "      let r = read_volatile("+rsname+") as "+rstype+";\n"
         r += "      #[cfg(target_arch = \"arm\")]"
-        r += "      dmb();\n"
+        r += "      asm!(\"\", options(nostack, readonly, preserves_flags));\n"
         for word in range(1, nwords):
             r += "      let r = r << "+str(busword)+" | " + \
                  "read_volatile("+rsname+".offset("+str(word*(cpu_dw_bytes//4))+")) as "+rstype+";\n"
             r += "      #[cfg(target_arch = \"arm\")]"
-            r += "      dmb();\n"
+            r += "      asm!(\"\", options(nostack, readonly, preserves_flags));\n"
         r += "      r\n"
     else:
         r += "      read_volatile("+rsname+") as "+rstype+"\n"
@@ -249,7 +249,7 @@ def get_csr_rust(regions, groups, constants, cpu_dw_bytes=4):
             r += "    use core::ptr::{read_volatile, write_volatile};\n"
             r += "    #[cfg(target_arch = \"arm\")]"
             r += "    #[allow(unused_imports)]\n"
-            r += "    use libcortex_a9::asm::dmb;\n"
+            r += "    use core::arch::asm;\n"
             r += "\n"
             for csr in obj:
                 nwords = (csr.size + busword - 1)//busword
